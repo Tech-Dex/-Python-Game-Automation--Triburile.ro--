@@ -304,7 +304,11 @@ while True:
     print ("\n")
     print ("Stage " + k )
     print ("\n")
+<<<<<<< HEAD
     k = k + 1
+=======
+    ++k
+>>>>>>> master
     dataBot.getResourceInfo()
     dataBot.getGeneralInfo()
 
