@@ -493,7 +493,7 @@ class Army_Upgrade(Data_Village):
         self.levelWallCSS = self.browser.find_element_by_css_selector("#main_buildrow_wall > td:nth-child(1) > span:nth-child(4)")
         self.levelWallText = self.levelWallCSS.text
         self.levelWallINT = int(self.levelWallText[-1:])
-        if( self.levelWallINT < 2 or self.levelWallText == 'inexistent'):
+        if( self.levelWallINT < 20 or self.levelWallText == 'inexistent'):
             self.browser.execute_script('arguments[0].scrollIntoView();',self.levelWallCSS)
             armyUpgradeBot.upgradeWall()
             self.browser.find_element_by_class_name("village").click()
