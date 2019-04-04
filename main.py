@@ -126,11 +126,11 @@ class Village_Quest(Data_Village):
                 self.browser.execute_script('arguments[0].scrollIntoView();',self.moveTo)
                 self.browser.find_element_by_css_selector('#main_buildlink_storage_' + str(self.level_nr) ).click()
                 print ('Time until finish in seconds: ' + str(self.timeToWaitInSeconds) )
+                self.browser.execute_script("window.scrollTo(0,0)")
                 time.sleep(self.timeToWaitInSeconds + 2)
                 print ('Finished, go to village')
-                self.moveTo = self.browser.find_element_by_class_name("village")
-                self.browser.execute_script('arguments[0].scrollIntoView();',self.moveTo)
-                self.moveTo.click();
+                self.homeButton = self.browser.find_element_by_class_name("village")
+                self.homeButton.click();
                 questBot.questFinished()
 
     def questFinished(self): # Checking Dialog Box Quest for taking reward
@@ -201,8 +201,8 @@ class Resource_Upgrade(Data_Village):
                 self.buttonUpgradeStorage.click()
 
             print ("Time Until Upgrade is ready: " + str(self.upgradeFarmTimeSeconds) )
-            time.sleep(self.upgradeFarmTimeSeconds + 2)
             self.browser.execute_script("window.scrollTo(0,0)")
+            time.sleep(self.upgradeFarmTimeSeconds + 2)
             self.homeButton.click();
     def upgradeStorage(self):
         self.currentLevelStorage = self.browser.find_element_by_css_selector('#main_buildrow_storage > td:nth-child(1) > span:nth-child(4)').text
@@ -242,9 +242,10 @@ class Resource_Upgrade(Data_Village):
                 self.buttonUpgradeStorage.click()
 
             print ("Time Until Upgrade is ready: " + str(self.upgradeStorageTimeSeconds) )
-            time.sleep(self.upgradeStorageTimeSeconds + 2)
             self.browser.execute_script("window.scrollTo(0,0)")
-            self.homeButton.click();
+            time.sleep(self.upgradeStorageTimeSeconds + 2)
+            self.homeButton.click()
+
     def upgradeWood(self, levelWood):
         self.homeButton = self.browser.find_element_by_class_name("village")
         #activate execute_script when wood is out of window ( when u have more building it happens )
@@ -283,8 +284,8 @@ class Resource_Upgrade(Data_Village):
                     self.buttonUpgrade.click()
 
                 print ("Time Until Upgrade is ready: " + str(self.upgradeTimeSeconds) )
-                time.sleep(self.upgradeTimeSeconds + 2)
                 self.browser.execute_script("window.scrollTo(0,0)")
+                time.sleep(self.upgradeTimeSeconds + 2)
                 self.homeButton.click();
     def upgradeStone(self, levelStone):
         self.homeButton = self.browser.find_element_by_class_name("village")
@@ -326,7 +327,6 @@ class Resource_Upgrade(Data_Village):
                 print ("Time Until Upgrade is ready: " + str(self.upgradeTimeSeconds) )
                 self.browser.execute_script("window.scrollTo(0,0)")
                 time.sleep(self.upgradeTimeSeconds + 2)
-
                 self.homeButton.click();
     def upgradeIron(self, levelIron):
         self.homeButton = self.browser.find_element_by_class_name("village")
@@ -366,9 +366,10 @@ class Resource_Upgrade(Data_Village):
                     self.buttonUpgrade.click()
 
                 print ("Time Until Upgrade is ready: " + str(self.upgradeTimeSeconds) )
-                time.sleep(self.upgradeTimeSeconds + 2)
                 self.browser.execute_script("window.scrollTo(0,0)")
-                self.homeButton.click();
+                time.sleep(self.upgradeTimeSeconds + 2)
+                self.homeButton.click()
+
     def compareLevels(self):
         self.browser.find_element_by_class_name('visual-label-main').click()
         self.levelWoodText = self.browser.find_element_by_css_selector('#main_buildrow_wood > td:nth-child(1) > span:nth-child(4)').text
@@ -440,72 +441,146 @@ class Army_Upgrade(Data_Village):
         self.waitTimeText = self.browser.find_element_by_css_selector('#sword_0_cost_time').text
         self.waitTimeSeconds = sum( x * int(t) for x, t in zip([3600, 60, 1], self.waitTimeText.split(':'))) * 3
         #Can be change however you want
-        print (self.waitTimeSeconds)
+
         self.wood = self.wood - self.costWood
         self.stone = self.stone - self.costStone
         self.iron = self.iron - self.costIron
         return self.waitTimeSeconds
 
+    def upgradeWall(self):
+        self.currentLevelWall = self.browser.find_element_by_css_selector('#main_buildrow_wall > td:nth-child(1) > span:nth-child(4)').text
+        self.levelWall = int(self.currentLevelWall[-1:]) + 1
+        self.costWood = int(self.browser.find_element_by_css_selector('#main_buildrow_wall > td:nth-child(2)').text)
+        self.costStone = int(self.browser.find_element_by_css_selector('#main_buildrow_wall > td:nth-child(3)').text)
+        self.costIron = int(self.browser.find_element_by_css_selector('#main_buildrow_wall > td:nth-child(4)').text)
+        self.upgradeTimeText = self.browser.find_element_by_css_selector('#main_buildrow_wall > td:nth-child(5)').text
+        self.costPopulation = int(self.browser.find_element_by_css_selector('#main_buildrow_wall > td:nth-child(6)').text)
+        self.upgradeTimeSeconds = sum( x * int(t) for x, t in zip([3600, 60, 1], self.upgradeTimeText.split(':')))
+
+        if self.costPopulation > self.maxPopulation - self.currentPopulation:
+            resourceUpgradeBot.upgradeFarm()
+        else:
+            if max(self.costWood, self.costStone, self.costIron) > self.maxStorage:
+                resourceUpgradeBot.upgradeStorage()
+            else:
+                if self.wood >= self.costWood and self.iron >= self.costIron and self.stone >= self.costStone:
+                    self.buttonUpgrade = self.browser.find_element_by_css_selector("#main_buildlink_wall_" + str(self.levelWall) )
+                    self.buttonUpgrade.click()
+                else:
+                    self.needWood = self.costWood - self.wood
+                    self.needIron = self.costIron - self.iron
+                    self.needStone = self.costStone - self.stone
+                    #Hour conversion
+                    self.timeForWood = (self.needWood/self.woodPerHour) * 3600 + 60
+                    self.timeForIron = (self.needIron/self.ironPerHour) * 3600 + 60
+                    self.timeForStone = (self.needStone/self.stonePerHour) * 3600 + 60
+
+                    self.waitTime = max( self.timeForWood, self.timeForIron, self.timeForStone )
+                    print ("Time to get all resource that you need:" + str(self.waitTime) )
+                    time.sleep(self.waitTime + 2)
+                    self.browser.get(self.browser.getCurrentUrl())
+                    self.buttonUpgrade = self.browser.find_element_by_css_selector("#main_buildlink_wall_" + str(self.levelWall) )
+                    self.buttonUpgrade.click()
+
+                print ("Time Until Upgrade is ready: " + str(self.upgradeTimeSeconds) )
+                self.browser.execute_script("window.scrollTo(0,0)")
+                time.sleep(self.upgradeTimeSeconds + 2)
+                self.homeButton.click()
+
     def defensiveArmy(self):
         #The wall is very important try to make it level 20 as fast as possible
-        self.homeButton = self.browser.find_element_by_class_name("village")
-        if self.maxPopulation - 4 < self.currentPopulation:
-            self.browser.find_element_by_class_name('visual-label-main').click()
-            resourceUpgradeBot.upgradeFarm()
-            self.homeButton.click()
+        self.browser.find_element_by_class_name('visual-label-main').click()
+        self.levelWallCSS = self.browser.find_element_by_css_selector("#main_buildrow_wall > td:nth-child(1) > span:nth-child(4)")
+        self.levelWallText = self.levelWallCSS.text
+        self.levelWallINT = int(self.levelWallText[-1:])
+        if( self.levelWallINT < 2 or self.levelWallText == 'inexistent'):
+            self.browser.execute_script('arguments[0].scrollIntoView();',self.levelWallCSS)
+            armyUpgradeBot.upgradeWall()
+            self.browser.find_element_by_class_name("village").click()
         else:
-            self.browser.find_element_by_class_name('visual-label-barracks').click()
-        #Sword Man are stronger than Lancer Man: Ratio 3 Swords : 1 Lancer
-            self.timeTotalWaiting = armyUpgradeBot.buildLancer()
-            self.timeTotalWaiting = self.timeTotalWaiting + armyUpgradeBot.buildSword()
-
-            if self.wood > 0 and self.stone > 0 and self.iron > 0:
-                self.recruit = self.browser.find_element_by_css_selector('#spear_0')
-                self.recruit.send_keys('1')
-                self.recruit = self.browser.find_element_by_css_selector('#sword_0')
-                self.recruit.send_keys('3')
-
-                self.browser.find_element_by_class_name('btn-recruit').click()
-                print('Recruitment start. Time to wait: ' + str(self.timeTotalWaiting))
-                time.sleep(self.timeTotalWaiting + 2)
-                self.homeButton.click()
+            if self.maxPopulation - 4 < self.currentPopulation:
+                self.browser.find_element_by_class_name("village").click()
+                self.browser.find_element_by_class_name('visual-label-main').click()
+                resourceUpgradeBot.upgradeFarm()
+                self.browser.find_element_by_class_name("village").click()
             else:
-                self.waitTime = 0
-                if self.wood < 0 and self.waitTime < -self.wood/self.woodPerHour:
-                    self.waitTime = (-self.wood/self.woodPerHour) * 3600 + 5
+                self.browser.find_element_by_class_name("village").click()
+                self.browser.find_element_by_class_name('visual-label-barracks').click()
+            #Sword Man are stronger than Lancer Man: Ratio 3 Swords : 1 Lancer
+                self.timeTotalWaiting = armyUpgradeBot.buildLancer()
+                self.timeTotalWaiting = self.timeTotalWaiting + armyUpgradeBot.buildSword()
 
-                if self.stone < 0 and self.waitTime < self.stone/self.stonePerHour:
-                    self.waitTime = (-self.stone/self.stonePerHour) * 3600 + 5
+                if self.wood > 0 and self.stone > 0 and self.iron > 0:
+                    self.recruit = self.browser.find_element_by_css_selector('#spear_0')
+                    self.recruit.send_keys('1')
+                    self.recruit = self.browser.find_element_by_css_selector('#sword_0')
+                    self.recruit.send_keys('3')
 
-                if self.iron < 0 and self.waitTime < self.iron/self.ironPerHour:
-                    self.waitTime = (-self.iron/self.ironPerHour) * 3600 + 5
+                    self.browser.find_element_by_class_name('btn-recruit').click()
+                    print('Recruitment start. Time to wait: ' + str(self.timeTotalWaiting))
+                    time.sleep(self.timeTotalWaiting + 2)
+                    self.browser.find_element_by_class_name("village").click()
 
-                print ("Time to get all resource that you need:" + str(self.waitTime) )
-                time.sleep(self.waitTime + 2)
+                else:
+                    self.waitTime = 0
+                    if self.wood < 0 and self.waitTime < -self.wood/self.woodPerHour:
+                        self.waitTime = (-self.wood/self.woodPerHour) * 3600 + 5
 
-                self.recruit = self.browser.find_element_by_css_selector('#spear_0')
-                self.recruit.send_keys('1')
-                self.recruit = self.browser.find_element_by_css_selector('#sword_0')
-                self.recruit.send_keys('3')
+                    if self.stone < 0 and self.waitTime < self.stone/self.stonePerHour:
+                        self.waitTime = (-self.stone/self.stonePerHour) * 3600 + 5
 
-                self.browser.find_element_by_class_name('btn-recruit').click()
+                    if self.iron < 0 and self.waitTime < self.iron/self.ironPerHour:
+                        self.waitTime = (-self.iron/self.ironPerHour) * 3600 + 5
 
-                print('Recruitment start. Time to wait: ' + str(self.timeTotalWaiting))
-                time.sleep(self.timeTotalWaiting + 2)
-                self.homeButton.click()
+                    print ("Time to get all resource that you need:" + str(self.waitTime) )
+                    time.sleep(self.waitTime + 2)
+
+                    self.recruit = self.browser.find_element_by_css_selector('#spear_0')
+                    self.recruit.send_keys('1')
+                    self.recruit = self.browser.find_element_by_css_selector('#sword_0')
+                    self.recruit.send_keys('3')
+
+                    self.browser.find_element_by_class_name('btn-recruit').click()
+
+                    print('Recruitment start. Time to wait: ' + str(self.timeTotalWaiting))
+                    time.sleep(self.timeTotalWaiting + 2)
+                    self.browser.find_element_by_class_name("village").click()
+
+
+
+    def buildAxe(self):
+        self.costWood = int(self.browser.find_element_by_css_selector('#axe_0_cost_wood').text) * 5
+        self.costStone = int(self.browser.find_element_by_css_selector('#axe_0_cost_stone').text) * 5
+        self.costIron = int(self.browser.find_element_by_css_selector('#axe_0_cost_iron').text) * 5
+        self.waitTimeText = self.browser.find_element_by_css_selector('#axe_0_cost_time').text
+        self.waitTimeSeconds = sum( x * int(t) for x, t in zip([3600, 60, 1], self.waitTimeText.split(':'))) * 5
+
+        self.wood = self.wood - self.costWood
+        self.stone = self.stone - self.costStone
+        self.iron = self.iron - self.costIron
+        return self.waitTimeSeconds
+
 
     def offensiveArmy(self):
-        self.homeButton = self.browser.find_element_by_class_name("village")
         if self.maxPopulation - 5 < self.currentPopulation:
             self.browser.find_element_by_class_name('visual-label-main').click()
             resourceUpgradeBot.upgradeFarm()
-            self.homeButton.click()
+            self.browser.find_element_by_class_name("village").click()
         else:
             self.browser.find_element_by_class_name('visual-label-barracks').click()
-        #Axe Man and Riders
+        #Axe Man
             self.timeTotalWaiting = armyUpgradeBot.buildAxe()
-            self.timeTotalWaiting = self.timeTotalWaiting + armyUpgradeBot.buildRiders()
-            print("To Finish")
+
+            if self.wood > 0 and self.stone > 0 and self.iron > 0:
+                    self.recruit = self.browser.find_element_by_css_selector('#axe_0')
+                    self.recruit.send_keys('5')
+
+                    self.browser.find_element_by_class_name('btn-recruit').click()
+
+                    print('Recruitment start. Time to wait: ' + str(self.timeTotalWaiting))
+                    time.sleep(self.timeTotalWaiting + 2)
+                    self.browser.find_element_by_class_name("village").click()
+
     def profileChoose(self, profile):
         if profile == 1:
             armyUpgradeBot.offensiveArmy()
@@ -513,7 +588,7 @@ class Army_Upgrade(Data_Village):
             armyUpgradeBot.defensiveArmy()
 
 decison = int(input("1)Force Auto-Quest(experimental)\n2)Auto-Build Resource\n3)Auto-Recruitment Army\nChoose what BOT to do: " ))
-loginBot = Triburile_Login('username','password') # change it
+loginBot = Triburile_Login('botPy','parola') # change it
 loginBot.logIn()
 loginBot.startPopUp()
 print ("\n\t")
@@ -529,6 +604,10 @@ armyUpgradeBot = Army_Upgrade(dataBot)
 # Skip when you have a mission with minimap, to hard to automatize for attacking a village, i have to find a way to import full map from game
 if decison == 1 :
     while True:
+        try:
+             questBot.questFinished()
+        except Exception:
+            pass
         questBot.questPrioritize()
         questBot.questFinished()
         dataBot.getResourceInfo()
@@ -547,7 +626,7 @@ elif decison == 2:
         dataBot.getGeneralInfo()
 
 elif decison == 3:
-    profile = int( input ("1)Offensive Army(In-development)\n2)Defensive Army\nChoose what to do:"))
+    profile = int( input ("1)Offensive Army\n2)Defensive Army\nChoose what to do:"))
     stage = 2
 
     while True:
